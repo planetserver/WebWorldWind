@@ -120,13 +120,6 @@ define([
              */
             this.referencePoint = null;
 
-            /**
-             * This tile's opacity.
-             * @type {Number}
-             * @default 1
-             */
-            this.opacity = 1;
-
             // Internal use only. Intentionally not documented.
             this.samplePoints = null;
 
@@ -312,10 +305,9 @@ define([
             // window-size dependent and results in selecting an excessive number of tiles when the window is large.
 
             var cellSize = dc.globe.equatorialRadius * this.texelSize,
-                distance = this.distanceTo(dc.navigatorState.eyePoint),
-                pixelSize = dc.navigatorState.pixelSizeAtDistance(distance);
+                distance = this.distanceTo(dc.navigatorState.eyePoint);
 
-            return cellSize > Math.max(detailFactor * pixelSize, 0.5);
+            return cellSize > distance * Math.pow(10, -detailFactor);
         };
 
         /**

@@ -4,7 +4,7 @@
  */
 /**
  * @exports Texture
- * @version $Id: Texture.js 3414 2015-08-20 19:09:19Z tgaskins $
+ * @version $Id: Texture.js 3101 2015-05-19 18:15:32Z dcollins $
  */
 define([
         '../error/ArgumentError',
@@ -45,15 +45,15 @@ define([
             this.originalImageWidth = this.imageWidth;
             this.originalImageHeight = this.imageHeight;
 
-            gl.bindTexture(gl.TEXTURE_2D, textureId);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER,
-                isPowerOfTwo ? gl.LINEAR_MIPMAP_LINEAR : gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER,
-                gl.LINEAR);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S,
-                gl.CLAMP_TO_EDGE);
-            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T,
-                gl.CLAMP_TO_EDGE);
+            gl.bindTexture(WebGLRenderingContext.TEXTURE_2D, textureId);
+            gl.texParameteri(WebGLRenderingContext.TEXTURE_2D, WebGLRenderingContext.TEXTURE_MIN_FILTER,
+                isPowerOfTwo ? WebGLRenderingContext.LINEAR_MIPMAP_LINEAR : WebGLRenderingContext.LINEAR);
+            gl.texParameteri(WebGLRenderingContext.TEXTURE_2D, WebGLRenderingContext.TEXTURE_MAG_FILTER,
+                WebGLRenderingContext.LINEAR);
+            gl.texParameteri(WebGLRenderingContext.TEXTURE_2D, WebGLRenderingContext.TEXTURE_WRAP_S,
+                WebGLRenderingContext.CLAMP_TO_EDGE);
+            gl.texParameteri(WebGLRenderingContext.TEXTURE_2D, WebGLRenderingContext.TEXTURE_WRAP_T,
+                WebGLRenderingContext.CLAMP_TO_EDGE);
 
             // Setup 4x anisotropic texture filtering when this feature is available.
             // https://www.khronos.org/registry/webgl/extensions/EXT_texture_filter_anisotropic
@@ -61,25 +61,19 @@ define([
                 gl.getExtension("EXT_texture_filter_anisotropic") ||
                 gl.getExtension("WEBKIT_EXT_texture_filter_anisotropic"));
             if (ext) {
-                gl.texParameteri(gl.TEXTURE_2D, ext.TEXTURE_MAX_ANISOTROPY_EXT, 4);
+                gl.texParameteri(WebGLRenderingContext.TEXTURE_2D, ext.TEXTURE_MAX_ANISOTROPY_EXT, 4);
             }
 
-            gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
-            gl.texImage2D(gl.TEXTURE_2D, 0,
-                gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-            gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 0);
+            gl.pixelStorei(WebGLRenderingContext.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 1);
+            gl.texImage2D(WebGLRenderingContext.TEXTURE_2D, 0,
+                WebGLRenderingContext.RGBA, WebGLRenderingContext.RGBA, WebGLRenderingContext.UNSIGNED_BYTE, image);
+            gl.pixelStorei(WebGLRenderingContext.UNPACK_PREMULTIPLY_ALPHA_WEBGL, 0);
 
             if (isPowerOfTwo) {
-                gl.generateMipmap(gl.TEXTURE_2D);
+                gl.generateMipmap(WebGLRenderingContext.TEXTURE_2D);
             }
 
             this.textureId = textureId;
-
-            /**
-             * The time at which this texture was created.
-             * @type {Date}
-             */
-            this.creationTime = new Date();
         };
 
         /**
@@ -96,7 +90,7 @@ define([
          * @param {DrawContext} dc The current draw context.
          */
         Texture.prototype.bind = function (dc) {
-            dc.currentGlContext.bindTexture(dc.currentGlContext.TEXTURE_2D, this.textureId);
+            dc.currentGlContext.bindTexture(WebGLRenderingContext.TEXTURE_2D, this.textureId);
             dc.frameStatistics.incrementTextureLoadCount(1);
             return true;
         };

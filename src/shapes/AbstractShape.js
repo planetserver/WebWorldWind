@@ -250,7 +250,7 @@ define([
                 }
 
                 orderedRenderable.layer = dc.currentLayer;
-                dc.addOrderedRenderable(orderedRenderable, this.currentData.eyeDistance);
+                dc.addOrderedRenderable(orderedRenderable);
             }
         };
 

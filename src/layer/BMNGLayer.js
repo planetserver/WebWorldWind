@@ -4,7 +4,7 @@
  */
 /**
  * @exports BMNGLayer
- * @version $Id: BMNGLayer.js 3403 2015-08-15 02:00:01Z tgaskins $
+ * @version $Id: BMNGLayer.js 3123 2015-05-28 22:19:28Z tgaskins $
  */
 define([
         '../geom/Location',
@@ -29,15 +29,24 @@ define([
          * or undefined.
          */
         var BMNGLayer = function (layerName) {
+          var wcpsImageLayer = new WorldWind.RenderableLayer();
             TiledImageLayer.call(this,
-                Sector.FULL_SPHERE, new Location(45, 45), 5, "image/jpeg", layerName || "BMNG256", 256, 256);
+                Sector.FULL_SPHERE, new Location(45, 45), 5, "image/jpeg", layerName, 128, 128);
 
-            this.displayName = "Blue Marble";
+            this.displayName = "Moon WMS service";
             this.pickEnabled = false;
 
-            this.urlBuilder = new WmsUrlBuilder(location.protocol + "//worldwind25.arc.nasa.gov/wms",
-                layerName || "BlueMarble-200405", "", "1.3.0");
+            this.urlBuilder = new WmsUrlBuilder("http://212.201.45.10:8080/rasdaman/ows",
+              layerName || "moon_wgs84", "", "1.3.0");
+
+
         };
+
+      //  var wcpsQuery = function(){
+        //  var request;
+        //  request = 'http://212.201.45.10:8080/rasdaman/ows?query=for c in (' DTM ') return encode(scale(c, { i(1:100), j(1:100) }))], "png","nodata=0")';
+        //}
+
 
         BMNGLayer.prototype = Object.create(TiledImageLayer.prototype);
 

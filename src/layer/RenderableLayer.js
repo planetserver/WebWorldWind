@@ -4,7 +4,7 @@
  */
 /**
  * @exports RenderableLayer
- * @version $Id: RenderableLayer.js 3334 2015-07-22 19:15:43Z tgaskins $
+ * @version $Id: RenderableLayer.js 3118 2015-05-27 19:39:20Z dcollins $
  */
 define([
         '../error/ArgumentError',
@@ -27,11 +27,7 @@ define([
         var RenderableLayer = function (displayName) {
             Layer.call(this, displayName);
 
-            /**
-             * The array of renderables;
-             * @type {Array}
-             * @readonly
-             */
+            // Intentionally not documented.
             this.renderables = [];
         };
 

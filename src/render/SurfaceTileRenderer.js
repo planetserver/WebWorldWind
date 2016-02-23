@@ -4,7 +4,7 @@
  */
 /**
  * @exports SurfaceTileRenderer
- * @version $Id: SurfaceTileRenderer.js 3345 2015-07-28 20:28:35Z dcollins $
+ * @version $Id: SurfaceTileRenderer.js 3217 2015-06-19 18:58:03Z tgaskins $
  */
 define([
         '../error/ArgumentError',
@@ -41,12 +41,10 @@ define([
          * Render a specified collection of surface tiles.
          * @param {DrawContext} dc The current draw context.
          * @param {SurfaceTile[]} surfaceTiles The surface tiles to render.
-         * @param {Number} opacity The opacity at which to draw the surface tiles.
-         * @param {Boolean} tilesHaveOpacity If true, incoming tiles each have their own opacity property and
-         * it's value is applied when the tile is drawn.
-         * @throws {ArgumentError} If the specified surface tiles array is null or undefined.
+         * @param {number} opacity The opacity at which to draw the surface tiles.
+         * @throes {ArgumentError} If the specified surface tiles array is null or undefined.
          */
-        SurfaceTileRenderer.prototype.renderTiles = function (dc, surfaceTiles, opacity, tilesHaveOpacity) {
+        SurfaceTileRenderer.prototype.renderTiles = function (dc, surfaceTiles, opacity) {
             if (!surfaceTiles) {
                 throw new ArgumentError(
                     Logger.logMessage(Logger.LEVEL_SEVERE, "SurfaceTileRenderer", "renderTiles",
@@ -62,8 +60,7 @@ define([
                 program,
                 terrainTile,
                 terrainTileSector,
-                surfaceTile,
-                currentTileOpacity = 1;
+                surfaceTile;
 
             if (!terrain)
                 return;
@@ -93,11 +90,6 @@ define([
                                         } else {
                                             // Surface shape tiles don't use a pick color. Pick colors are encoded into
                                             // the colors of the individual shapes drawn into the tile.
-                                        }
-                                    } else {
-                                        if (tilesHaveOpacity && surfaceTile.opacity != currentTileOpacity) {
-                                            program.loadOpacity(gl, opacity * surfaceTile.opacity);
-                                            currentTileOpacity = surfaceTile.opacity;
                                         }
                                     }
 
@@ -130,7 +122,7 @@ define([
         SurfaceTileRenderer.prototype.beginRendering = function (dc, opacity) {
             var gl = dc.currentGlContext,
                 program = dc.findAndBindProgram(SurfaceTileRendererProgram);
-            program.loadTexSampler(gl, gl.TEXTURE0);
+            program.loadTexSampler(gl, WebGLRenderingContext.TEXTURE0);
 
             if (dc.pickingMode && !this.isSurfaceShapeTileRendering) {
                 program.loadModulateColor(gl, true);
@@ -145,7 +137,8 @@ define([
         // Intentionally not documented.
         SurfaceTileRenderer.prototype.endRendering = function (dc) {
             var gl = dc.currentGlContext;
-            gl.bindTexture(gl.TEXTURE_2D, null);
+            gl.bindTexture(WebGLRenderingContext.TEXTURE_2D, null);
+            dc.bindProgram(null);
         };
 
         // Intentionally not documented.

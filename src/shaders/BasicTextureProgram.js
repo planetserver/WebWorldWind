@@ -4,7 +4,7 @@
  */
 /**
  * @exports BasicTextureProgram
- * @version $Id: BasicTextureProgram.js 3327 2015-07-21 19:03:39Z dcollins $
+ * @version $Id: BasicTextureProgram.js 3282 2015-06-29 17:33:25Z tgaskins $
  */
 define([
         '../error/ArgumentError',
@@ -190,7 +190,7 @@ define([
                     Logger.logMessage(Logger.LEVEL_SEVERE, "BasicTextureProgram", "loadModelviewInverse", "missingMatrix"));
             }
 
-            this.loadUniformMatrix(gl, matrix, this.mvInverseMatrixLocation);
+            GpuProgram.loadUniformMatrix(gl, matrix, this.mvInverseMatrixLocation);
         };
 
         /**
@@ -206,7 +206,7 @@ define([
                     Logger.logMessage(Logger.LEVEL_SEVERE, "BasicTextureProgram", "loadModelviewProjection", "missingMatrix"));
             }
 
-            this.loadUniformMatrix(gl, matrix, this.mvpMatrixLocation);
+            GpuProgram.loadUniformMatrix(gl, matrix, this.mvpMatrixLocation);
         };
 
         /**
@@ -222,7 +222,7 @@ define([
                     Logger.logMessage(Logger.LEVEL_SEVERE, "BasicTextureProgram", "loadColor", "missingColor"));
             }
 
-            this.loadUniformColor(gl, color, this.colorLocation);
+            GpuProgram.loadUniformColor(gl, color, this.colorLocation);
         };
 
         /**
@@ -231,7 +231,7 @@ define([
          * @param {Boolean} enable true to enable texturing, false to disable texturing.
          */
         BasicTextureProgram.prototype.loadTextureEnabled = function (gl, enable) {
-            gl.uniform1i(this.textureEnabledLocation, enable ? 1 : 0);
+            GpuProgram.loadUniformInteger(gl, enable ? 1 : 0, this.textureEnabledLocation);
         };
 
         /**
@@ -245,7 +245,7 @@ define([
          * @param {Boolean} enable true to enable modulation, false to disable modulation.
          */
         BasicTextureProgram.prototype.loadModulateColor = function (gl, enable) {
-            gl.uniform1i(this.modulateColorLocation, enable ? 1 : 0);
+            GpuProgram.loadUniformInteger(gl, enable ? 1 : 0, this.modulateColorLocation);
         };
 
         /**
@@ -254,7 +254,7 @@ define([
          * @param {Number} unit The texture unit.
          */
         BasicTextureProgram.prototype.loadTextureUnit = function (gl, unit) {
-            gl.uniform1i(this.textureUnitLocation, unit - gl.TEXTURE0);
+            GpuProgram.loadUniformInteger(gl, unit - WebGLRenderingContext.TEXTURE0, this.textureUnitLocation);
         };
 
         /**
@@ -263,7 +263,7 @@ define([
          * @param {Matrix} matrix The texture coordinate matrix.
          */
         BasicTextureProgram.prototype.loadTextureMatrix = function (gl, matrix) {
-            this.loadUniformMatrix(gl, matrix, this.textureMatrixLocation);
+            GpuProgram.loadUniformMatrix(gl, matrix, this.textureMatrixLocation);
         };
 
         /**
@@ -272,7 +272,7 @@ define([
          * @param {Number} opacity The opacity in the range [0, 1].
          */
         BasicTextureProgram.prototype.loadOpacity = function (gl, opacity) {
-            gl.uniform1f(this.opacityLocation, opacity);
+            GpuProgram.loadUniformFloat(gl, opacity, this.opacityLocation);
         };
 
         /**
@@ -281,7 +281,7 @@ define([
          * @param {Number} applyLighting true to apply lighting, otherwise false.
          */
         BasicTextureProgram.prototype.loadApplyLighting = function (gl, applyLighting) {
-            gl.uniform1i(this.applyLightingLocation, applyLighting);
+            GpuProgram.loadUniformInteger(gl, applyLighting, this.applyLightingLocation);
         };
 
         return BasicTextureProgram;

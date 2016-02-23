@@ -4,7 +4,7 @@
  */
 /**
  * @exports SurfaceTileRendererProgram
- * @version $Id: SurfaceTileRendererProgram.js 3327 2015-07-21 19:03:39Z dcollins $
+ * @version $Id: SurfaceTileRendererProgram.js 2944 2015-03-31 16:05:58Z tgaskins $
  */
 define([
         '../error/ArgumentError',
@@ -61,8 +61,8 @@ define([
                         /*
                          * Returns true when the texture coordinate samples texels outside the texture image.
                          */
-                    'bool isInsideTextureImage(const vec2 coord) {\n' +
-                    '    return coord.x >= 0.0 && coord.x <= 1.0 && coord.y >= 0.0 && coord.y <= 1.0;\n' +
+                    'bool isOutsideTextureImage(const vec2 coord) {\n' +
+                    '    return coord.x < 0.0 || coord.x > 1.0 || coord.y < 0.0 || coord.y > 1.0;\n' +
                     '}\n' +
                         /*
                          * OpenGL ES Shading Language v1.00 fragment shader for SurfaceTileRendererProgram. Writes the value of the texture 2D
@@ -71,12 +71,13 @@ define([
                          * standard range of [0,1].
                          */
                     'void main(void) {\n' +
-                        'float mask = float(isInsideTextureImage(texMaskCoord));' +
-                    'if (modulateColor) {\n' +
-                    '    gl_FragColor = color * mask * floor(texture2D(texSampler, texSamplerCoord).a + 0.5);\n' +
+                    'if (isOutsideTextureImage(texMaskCoord)) {\n' +
+                    '    discard;\n' +
+                    '} else if (modulateColor) {\n' +
+                    '    gl_FragColor = color * floor(texture2D(texSampler, texSamplerCoord).a + 0.5);\n' +
                     '} else {\n' +
                         /* Return either the sampled texture2D color multiplied by opacity or transparent black. */
-                    '    gl_FragColor = texture2D(texSampler, texSamplerCoord) * mask * opacity;\n' +
+                    '    gl_FragColor = texture2D(texSampler, texSamplerCoord) * opacity;\n' +
                     '}\n' +
                     '}';
 
@@ -157,7 +158,7 @@ define([
                         "missingMatrix"));
             }
 
-            this.loadUniformMatrix(gl, matrix, this.mvpMatrixLocation);
+            GpuProgram.loadUniformMatrix(gl, matrix, this.mvpMatrixLocation);
         };
 
         /**
@@ -174,7 +175,7 @@ define([
                         "missingMatrix"));
             }
 
-            this.loadUniformMatrix(gl, matrix, this.texSamplerMatrixLocation);
+            GpuProgram.loadUniformMatrix(gl, matrix, this.texSamplerMatrixLocation);
         };
 
         /**
@@ -191,7 +192,7 @@ define([
                         "missingMatrix"));
             }
 
-            this.loadUniformMatrix(gl, matrix, this.texMaskMatrixLocation);
+            GpuProgram.loadUniformMatrix(gl, matrix, this.texMaskMatrixLocation);
         };
 
         /**
@@ -229,7 +230,7 @@ define([
                     Logger.logMessage(Logger.LEVEL_SEVERE, "SurfaceTileRendererProgram", "loadColor", "missingColor"));
             }
 
-            this.loadUniformColor(gl, color, this.colorLocation);
+            GpuProgram.loadUniformColor(gl, color, this.colorLocation);
         };
 
         /**
@@ -243,7 +244,7 @@ define([
          * @param {Boolean} enable <code>true</code> to enable modulation, <code>false</code> to disable modulation.
          */
         SurfaceTileRendererProgram.prototype.loadModulateColor = function (gl, enable) {
-            gl.uniform1i(this.modulateColorLocation, enable ? 1 : 0);
+            GpuProgram.loadUniformInteger(gl, enable ? 1 : 0, this.modulateColorLocation);
         };
 
         return SurfaceTileRendererProgram;

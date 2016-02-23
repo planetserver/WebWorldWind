@@ -4,7 +4,7 @@
  */
 /**
  * @exports WorldWindow
- * @version $Id: WorldWindow.js 3402 2015-08-14 17:28:09Z tgaskins $
+ * @version $Id: WorldWindow.js 3319 2015-07-15 20:45:54Z dcollins $
  */
 define([
         './error/ArgumentError',
@@ -51,12 +51,10 @@ define([
          * @constructor
          * @classdesc Represents a World Wind window for an HTML canvas.
          * @param {String} canvasName The name assigned to the HTML canvas in the document.
-         * @param {ElevationModel} elevationModel An optional argument indicating the elevation model to use for the World
-         * Window. If missing or null, a default elevation model is used.
          * @throws {ArgumentError} If there is no HTML element with the specified name in the document, or if the
          * HTML canvas does not support WebGL.
          */
-        var WorldWindow = function (canvasName, elevationModel) {
+        var WorldWindow = function (canvasName) {
             if (!(window.WebGLRenderingContext)) {
                 throw new ArgumentError(
                     Logger.logMessage(Logger.LEVEL_SEVERE, "WorldWindow", "constructor",
@@ -98,7 +96,7 @@ define([
              * @type {number}
              * @readonly
              */
-            this.depthBits = gl.getParameter(gl.DEPTH_BITS);
+            this.depthBits = gl.getParameter(WebGLRenderingContext.DEPTH_BITS);
 
             /**
              * The current viewport of this World Window.
@@ -111,7 +109,7 @@ define([
              * The globe displayed.
              * @type {Globe}
              */
-            this.globe = new Globe(elevationModel || new EarthElevationModel());
+            this.globe = new Globe(new EarthElevationModel());
 
             /**
              * The layers to display in this world window.
@@ -644,17 +642,14 @@ define([
         WorldWindow.prototype.doNormalRepaint = function () {
             this.createTerrain();
             this.clearFrame();
-            this.deferOrderedRendering = false;
             if (this.drawContext.pickingMode) {
                 if (this.drawContext.makePickFrustum()) {
                     this.doPick();
-                    this.resolvePick();
                 }
             } else {
                 this.doDraw();
                 if (this.subsurfaceMode && this.hasStencilBuffer) {
                     this.redrawSurface();
-                    this.drawScreenRenderables();
                 }
             }
         };
@@ -665,31 +660,20 @@ define([
             if (this.drawContext.pickingMode) {
                 if (this.drawContext.makePickFrustum()) {
                     this.pick2DContiguous();
-                    this.resolvePick();
                 }
             } else {
                 this.draw2DContiguous();
             }
         };
 
-        WorldWindow.prototype.resolvePick = function () {
-            if (this.drawContext.pickTerrainOnly) {
-                this.resolveTerrainPick();
-            } else if (this.drawContext.regionPicking) {
-                this.resolveRegionPick();
-            } else {
-                this.resolveTopPick();
-            }
-        };
-
         // Internal function. Intentionally not documented.
         WorldWindow.prototype.beginFrame = function () {
             var gl = this.drawContext.currentGlContext;
-            gl.enable(gl.BLEND);
-            gl.enable(gl.CULL_FACE);
-            gl.enable(gl.DEPTH_TEST);
-            gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-            gl.depthFunc(gl.LEQUAL);
+            gl.enable(WebGLRenderingContext.BLEND);
+            gl.enable(WebGLRenderingContext.CULL_FACE);
+            gl.enable(WebGLRenderingContext.DEPTH_TEST);
+            gl.blendFunc(WebGLRenderingContext.ONE, WebGLRenderingContext.ONE_MINUS_SRC_ALPHA);
+            gl.depthFunc(WebGLRenderingContext.LEQUAL);
 
             if (this.drawContext.pickingMode) {
                 this.drawContext.makePickFramebuffer();
@@ -700,15 +684,16 @@ define([
         // Internal function. Intentionally not documented.
         WorldWindow.prototype.endFrame = function () {
             var gl = this.drawContext.currentGlContext;
-            gl.disable(gl.BLEND);
-            gl.disable(gl.CULL_FACE);
-            gl.disable(gl.DEPTH_TEST);
-            gl.blendFunc(gl.ONE, gl.ZERO);
-            gl.depthFunc(gl.LESS);
+            gl.disable(WebGLRenderingContext.BLEND);
+            gl.disable(WebGLRenderingContext.CULL_FACE);
+            gl.disable(WebGLRenderingContext.DEPTH_TEST);
+            gl.blendFunc(WebGLRenderingContext.ONE, WebGLRenderingContext.ZERO);
+            gl.depthFunc(WebGLRenderingContext.LESS);
             gl.clearColor(0, 0, 0, 1);
 
-            this.drawContext.bindFramebuffer(null);
-            this.drawContext.bindProgram(null);
+            if (this.drawContext.pickingMode) {
+                this.drawContext.bindFramebuffer(null);
+            }
         };
 
         // Internal function. Intentionally not documented.
@@ -717,7 +702,7 @@ define([
                 gl = dc.currentGlContext;
 
             gl.clearColor(dc.clearColor.red, dc.clearColor.green, dc.clearColor.blue, dc.clearColor.alpha);
-            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            gl.clear(WebGLRenderingContext.COLOR_BUFFER_BIT | WebGLRenderingContext.DEPTH_BUFFER_BIT);
         };
 
         // Internal function. Intentionally not documented.
@@ -726,10 +711,9 @@ define([
 
             if (this.subsurfaceMode && this.hasStencilBuffer) {
                 // Draw the surface and collect the ordered renderables.
-                this.drawContext.currentGlContext.disable(this.drawContext.currentGlContext.STENCIL_TEST);
+                this.drawContext.currentGlContext.disable(WebGLRenderingContext.STENCIL_TEST);
                 this.drawContext.surfaceShapeTileBuilder.clear();
                 this.drawLayers(true);
-                this.drawSurfaceRenderables();
                 this.drawContext.surfaceShapeTileBuilder.doRender(this.drawContext);
 
                 if (!this.deferOrderedRendering) {
@@ -739,11 +723,11 @@ define([
                     // drawn again, and the stencil buffer will ensure that they are drawn only where they overlap
                     // the fragments drawn by the ordered renderables.
                     this.drawContext.currentGlContext.clear(
-                        this.drawContext.currentGlContext.DEPTH_BUFFER_BIT | this.drawContext.currentGlContext.STENCIL_BUFFER_BIT);
-                    this.drawContext.currentGlContext.enable(this.drawContext.currentGlContext.STENCIL_TEST);
-                    this.drawContext.currentGlContext.stencilFunc(this.drawContext.currentGlContext.ALWAYS, 1, 1);
+                        WebGLRenderingContext.DEPTH_BUFFER_BIT | WebGLRenderingContext.STENCIL_BUFFER_BIT);
+                    this.drawContext.currentGlContext.enable(WebGLRenderingContext.STENCIL_TEST);
+                    this.drawContext.currentGlContext.stencilFunc(WebGLRenderingContext.ALWAYS, 1, 1);
                     this.drawContext.currentGlContext.stencilOp(
-                        this.drawContext.currentGlContext.REPLACE, this.drawContext.currentGlContext.REPLACE, this.drawContext.currentGlContext.REPLACE);
+                        WebGLRenderingContext.REPLACE, WebGLRenderingContext.REPLACE, WebGLRenderingContext.REPLACE);
                     this.drawOrderedRenderables();
 
                     this.drawContext.screenCreditController.drawCredits(this.drawContext);
@@ -751,12 +735,10 @@ define([
             } else {
                 this.drawContext.surfaceShapeTileBuilder.clear();
                 this.drawLayers(true);
-                this.drawSurfaceRenderables();
                 this.drawContext.surfaceShapeTileBuilder.doRender(this.drawContext);
 
                 if (!this.deferOrderedRendering) {
                     this.drawOrderedRenderables();
-                    this.drawScreenRenderables();
                 }
 
                 this.drawContext.screenCreditController.drawCredits(this.drawContext);
@@ -766,15 +748,12 @@ define([
         WorldWindow.prototype.redrawSurface = function () {
             // Draw the terrain and surface shapes but only where the current stencil buffer is non-zero.
             // The non-zero fragments are from drawing the ordered renderables previously.
-            this.drawContext.currentGlContext.enable(this.drawContext.currentGlContext.STENCIL_TEST);
-            this.drawContext.currentGlContext.stencilFunc(this.drawContext.currentGlContext.EQUAL, 1, 1);
+            this.drawContext.currentGlContext.stencilFunc(WebGLRenderingContext.EQUAL, 1, 1);
             this.drawContext.currentGlContext.stencilOp(
-                this.drawContext.currentGlContext.KEEP, this.drawContext.currentGlContext.KEEP, this.drawContext.currentGlContext.KEEP);
+                WebGLRenderingContext.KEEP, WebGLRenderingContext.KEEP, WebGLRenderingContext.KEEP);
             this.drawContext.surfaceShapeTileBuilder.clear();
             this.drawLayers(false);
-            this.drawSurfaceRenderables();
             this.drawContext.surfaceShapeTileBuilder.doRender(this.drawContext);
-            this.drawContext.currentGlContext.disable(this.drawContext.currentGlContext.STENCIL_TEST);
         };
 
         // Internal function. Intentionally not documented.
@@ -784,43 +763,23 @@ define([
             }
 
             if (!this.drawContext.pickTerrainOnly) {
-                if (this.subsurfaceMode && this.hasStencilBuffer) {
-                    // Draw the surface and collect the ordered renderables.
-                    this.drawContext.currentGlContext.disable(this.drawContext.currentGlContext.STENCIL_TEST);
-                    this.drawContext.surfaceShapeTileBuilder.clear();
-                    this.drawLayers(true);
-                    this.drawSurfaceRenderables();
-                    this.drawContext.surfaceShapeTileBuilder.doRender(this.drawContext);
+                this.drawContext.surfaceShapeTileBuilder.clear();
 
-                    if (!this.deferOrderedRendering) {
-                        // Clear the depth and stencil buffers prior to rendering the ordered renderables. This allows
-                        // sub-surface renderables to be drawn beneath the terrain. Turn on stenciling to capture the
-                        // fragments that ordered renderables draw. The terrain and surface shapes will be subsequently
-                        // drawn again, and the stencil buffer will ensure that they are drawn only where they overlap
-                        // the fragments drawn by the ordered renderables.
-                        this.drawContext.currentGlContext.clear(
-                            this.drawContext.currentGlContext.DEPTH_BUFFER_BIT | this.drawContext.currentGlContext.STENCIL_BUFFER_BIT);
-                        this.drawContext.currentGlContext.enable(this.drawContext.currentGlContext.STENCIL_TEST);
-                        this.drawContext.currentGlContext.stencilFunc(this.drawContext.currentGlContext.ALWAYS, 1, 1);
-                        this.drawContext.currentGlContext.stencilOp(
-                            this.drawContext.currentGlContext.REPLACE, this.drawContext.currentGlContext.REPLACE, this.drawContext.currentGlContext.REPLACE);
-                        this.drawOrderedRenderables();
-                        this.drawContext.terrain.pick(this.drawContext);
-                        this.drawScreenRenderables();
-                    }
-                } else {
-                    this.drawContext.surfaceShapeTileBuilder.clear();
+                this.drawLayers(true);
 
-                    this.drawLayers(true);
-                    this.drawSurfaceRenderables();
+                this.drawContext.surfaceShapeTileBuilder.doRender(this.drawContext);
 
-                    this.drawContext.surfaceShapeTileBuilder.doRender(this.drawContext);
-
-                    if (!this.deferOrderedRendering) {
-                        this.drawOrderedRenderables();
-                        this.drawScreenRenderables();
-                    }
+                if (!this.deferOrderedRendering) {
+                    this.drawOrderedRenderables();
                 }
+            }
+
+            if (this.drawContext.pickTerrainOnly) {
+                this.resolveTerrainPick();
+            } else if (this.drawContext.regionPicking) {
+                this.resolveRegionPick();
+            } else {
+                this.resolveTopPick();
             }
         };
 
@@ -924,8 +883,6 @@ define([
                     this.redrawSurface();
                 }
             }
-
-            this.drawScreenRenderables();
         };
 
         WorldWindow.prototype.pick2DContiguous = function () {
@@ -1023,24 +980,6 @@ define([
         };
 
         // Internal function. Intentionally not documented.
-        WorldWindow.prototype.drawSurfaceRenderables = function () {
-            var dc = this.drawContext,
-                sr;
-
-            dc.reverseSurfaceRenderables();
-
-            while (sr = dc.popSurfaceRenderable()) {
-                try {
-                    sr.renderSurface(dc);
-                } catch (e) {
-                    Logger.logMessage(Logger.LEVEL_WARNING, "WorldWindow", "drawSurfaceRenderables",
-                        "Error while rendering a surface renderable.\n" + e.message);
-                    // Keep going. Render the rest of the surface renderables.
-                }
-            }
-        };
-
-        // Internal function. Intentionally not documented.
         WorldWindow.prototype.drawOrderedRenderables = function () {
             var beginTime = Date.now(),
                 dc = this.drawContext,
@@ -1061,28 +1000,13 @@ define([
                     or.renderOrdered(dc);
                 } catch (e) {
                     Logger.logMessage(Logger.LEVEL_WARNING, "WorldWindow", "drawOrderedRenderables",
-                        "Error while rendering an ordered renderable.\n" + e.message);
+                        "Error while rendering a shape:" + e.message);
                     // Keep going. Render the rest of the ordered renderables.
                 }
             }
 
             dc.orderedRenderingMode = false;
             dc.frameStatistics.orderedRenderingTime = Date.now() - beginTime;
-        };
-
-        WorldWindow.prototype.drawScreenRenderables = function () {
-            var dc = this.drawContext,
-                or;
-
-            while (or = dc.nextScreenRenderable()) {
-                try {
-                    or.renderOrdered(dc);
-                } catch (e) {
-                    Logger.logMessage(Logger.LEVEL_WARNING, "WorldWindow", "drawOrderedRenderables",
-                        "Error while rendering a screen renderable.\n" + e.message);
-                    // Keep going. Render the rest of the screen renderables.
-                }
-            }
         };
 
         // Internal function. Intentionally not documented.
